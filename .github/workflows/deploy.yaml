@@ -1,0 +1,39 @@
+name: Deploy to Sandbox
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          cd infra
+          pip install -r requirements.txt
+      
+      - name: Pulumi Up
+        uses: pulumi/actions@v5
+        with:
+          command: up
+          stack-name: dev-${{ github.actor }}
+          work-dir: infra
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+      
+      - name: Tag stack with TTL
+        run: |
+          pulumi stack tag set expires_at "$(date -d '+7 days' --iso-8601=seconds)" \
+            --stack dev-${{ github.actor }}
+        working-directory: infra

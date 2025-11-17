@@ -1,0 +1,49 @@
+name: Pulumi Preview
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'infra/**'
+      - 'config/**'
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write  # Required to post comments
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          cd infra
+          pip install -r requirements.txt
+      
+      - name: Configure Pulumi
+        uses: pulumi/actions@v5
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+      
+      - name: Generate stack name
+        id: stack
+        run: |
+          USER=$(echo "${{ github.actor }}" | tr '[:upper:]' '[:lower:]')
+          STACK="dev-${USER}-pr${{ github.event.pull_request.number }}"
+          echo "stack_name=$STACK" >> $GITHUB_OUTPUT
+      
+      - name: Pulumi Preview
+        uses: pulumi/actions@v5
+        with:
+          command: preview
+          stack-name: ${{ steps.stack.outputs.stack_name }}
+          work-dir: infra
+          comment-on-pr: true
+          diff: true
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
