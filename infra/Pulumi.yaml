@@ -1,0 +1,13 @@
+name: iac-sandbox
+runtime: python
+description: Multi-tenant ephemeral Kubernetes sandbox
+
+config:
+  provider:
+    type: string
+    default: gcp
+  region:
+    type: string
+    default: us-central1
+  app_image:
+    type: string
