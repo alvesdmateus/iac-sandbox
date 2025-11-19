@@ -1,0 +1,3 @@
+provider: gcp
+region: us-central1  # Free tier eligible
+app_image: gcr.io/daring-precinct-478521-a3/sudoku-app:latest
