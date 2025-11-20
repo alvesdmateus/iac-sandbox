@@ -1,16 +1,18 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Any
 import pulumi
+
 
 class CloudProvider(ABC):
     """Abstract interface for cloud provider resources."""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.region = config.get("region")
+        self.project = config.get("project")
     
     @abstractmethod
-    def create_kubernetes_cluster(self, name: str, node_count: int) -> Any:
+    def create_kubernetes_cluster(self, name: str) -> Any:
         """Provision a managed Kubernetes cluster."""
         pass
     
