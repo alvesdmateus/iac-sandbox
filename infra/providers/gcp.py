@@ -30,14 +30,17 @@ class GCPProvider(CloudProvider):
             lambda args: self._build_kubeconfig(args[0], args[1], args[2])
         )
     
-    def _build_kubeconfig(self, name: str, endpoint: str, auth: Any) -> str:
+    def _build_kubeconfig(self, name: str, endpoint: str, auth) -> str:
         """Build kubeconfig with gke-gcloud-auth-plugin for authentication."""
         context = f"gke_{self.project}_{self.region}_{name}"
+        
+        # Use property accessor (not dict key)
+        ca_cert = auth.cluster_ca_certificate
         
         return f"""apiVersion: v1
 clusters:
 - cluster:
-    certificate-authority-data: {auth.cluster_ca_certificate}
+    certificate-authority-data: {ca_cert}
     server: https://{endpoint}
   name: {context}
 contexts:
@@ -54,4 +57,5 @@ users:
       apiVersion: client.authentication.k8s.io/v1beta1
       command: gke-gcloud-auth-plugin
       provideClusterInfo: true
+      interactiveMode: Never
 """

@@ -1,19 +1,22 @@
-name: Deploy to Sandbox
+name: Deploy Sandbox
 
 on:
   push:
     branches: [main]
     paths:
       - 'infra/**'
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
       
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       
@@ -22,11 +25,18 @@ jobs:
           cd infra
           pip install -r requirements.txt
       
+      - name: Generate stack name
+        id: stack
+        run: |
+          USER=$(echo "${{ github.actor }}" | tr '[:upper:]' '[:lower:]')
+          STACK="dev-${USER}"
+          echo "stack_name=$STACK" >> $GITHUB_OUTPUT
+      
       - name: Pulumi Up
         uses: pulumi/actions@v5
         with:
           command: up
-          stack-name: dev-${{ github.actor }}
+          stack-name: ${{ steps.stack.outputs.stack_name }}
           work-dir: infra
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
@@ -34,6 +44,8 @@ jobs:
       
       - name: Tag stack with TTL
         run: |
-          pulumi stack tag set expires_at "$(date -d '+7 days' --iso-8601=seconds)" \
-            --stack dev-${{ github.actor }}
+          EXPIRES_AT=$(date -u -d '+7 days' --iso-8601=seconds)
+          pulumi stack tag set expires_at "$EXPIRES_AT" --stack ${{ steps.stack.outputs.stack_name }}
         working-directory: infra
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}

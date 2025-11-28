@@ -36,9 +36,36 @@ cloud = get_provider(provider_name, {
 
 # Provision Kubernetes cluster
 cluster = cloud.create_kubernetes_cluster(name=f"sandbox-{stack}")
+# Configure Kubernetes provider using GCP cluster credentials directly
+# Configure Kubernetes provider using GCP cluster credentials directly
+# Configure Kubernetes provider using GCP cluster credentials directly
+kubeconfig = pulumi.Output.all(
+    cluster.name,
+    cluster.endpoint,
+    cluster.master_auth
+).apply(lambda args: f"""apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: {args[2]['cluster_ca_certificate']}
+    server: https://{args[1]}
+  name: {args[0]}
+contexts:
+- context:
+    cluster: {args[0]}
+    user: {args[0]}
+  name: {args[0]}
+current-context: {args[0]}
+kind: Config
+users:
+- name: {args[0]}
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1beta1
+      command: gke-gcloud-auth-plugin
+      provideClusterInfo: true
+      interactiveMode: Never
+""")
 
-# Configure Kubernetes provider with cluster credentials
-kubeconfig = cloud.get_kubeconfig(cluster)
 k8s_provider = k8s.Provider(
     "k8s-provider",
     kubeconfig=kubeconfig,
