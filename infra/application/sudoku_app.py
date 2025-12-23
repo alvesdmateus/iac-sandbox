@@ -27,7 +27,7 @@ def deploy_sudoku_app(
                     containers=[k8s.core.v1.ContainerArgs(
                         name="sudoku",
                         image=image,
-                        ports=[k8s.core.v1.ContainerPortArgs(container_port=3000)],
+                        ports=[k8s.core.v1.ContainerPortArgs(container_port=80)],
                         resources=k8s.core.v1.ResourceRequirementsArgs(
                             requests={"cpu": "100m", "memory": "128Mi"},
                             limits={"cpu": "500m", "memory": "512Mi"},
@@ -50,7 +50,7 @@ def deploy_sudoku_app(
             selector=app_labels,
             ports=[k8s.core.v1.ServicePortArgs(
                 port=80,
-                target_port=3000,
+                target_port=80,
             )],
         ),
         opts=pulumi.ResourceOptions(provider=provider)
