@@ -1,0 +1,66 @@
+name: Deploy Sandbox
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          cd infra
+          pip install -r requirements.txt
+      
+      - name: Generate stack name
+        id: stack
+        run: |
+          USER=$(echo "${{ github.actor }}" | tr '[:upper:]' '[:lower:]')
+          STACK="dev-${USER}"
+          echo "stack_name=$STACK" >> $GITHUB_OUTPUT
+
+      - name: Configure Pulumi stack
+        run: |
+          cd infra
+          pulumi login
+          if ! pulumi stack select ${{ steps.stack.outputs.stack_name }} 2>/dev/null; then
+            pulumi stack init ${{ steps.stack.outputs.stack_name }}
+            pulumi config set gcp:project ${{ secrets.GCP_PROJECT_ID }}
+            pulumi config set iac-sandbox:provider gcp
+            pulumi config set iac-sandbox:region us-central1
+            pulumi config set iac-sandbox:app_image us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/sudoku-repo/sudoku-app:master
+          fi
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+
+      - name: Pulumi Up
+        uses: pulumi/actions@v5
+        with:
+          command: up
+          stack-name: ${{ steps.stack.outputs.stack_name }}
+          work-dir: infra
+          upsert: true
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+      
+      - name: Tag stack with TTL
+        run: |
+          EXPIRES_AT=$(date -u -d '+7 days' --iso-8601=seconds)
+          pulumi stack tag set expires_at "$EXPIRES_AT" --stack ${{ steps.stack.outputs.stack_name }}
+        working-directory: infra
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}

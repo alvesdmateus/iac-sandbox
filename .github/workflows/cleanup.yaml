@@ -1,0 +1,33 @@
+name: Cleanup Expired Stacks
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install Pulumi CLI
+        uses: pulumi/actions@v5
+      
+      - name: Install dependencies
+        run: |
+          cd infra
+          pip install -r requirements.txt
+      
+      - name: Execute cleanup script
+        run: python scripts/cleanup_stacks.py
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}

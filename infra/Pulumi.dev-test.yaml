@@ -1,0 +1,5 @@
+config:
+  gcp:project: daring-precinct-478521-a3
+  iac-sandbox:provider: gcp
+  iac-sandbox:region: us-central1
+  iac-sandbox:app_image: us-central1-docker.pkg.dev/daring-precinct-478521-a3/sudoku-repo/sudoku-app:master
