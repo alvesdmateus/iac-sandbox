@@ -52,7 +52,6 @@ jobs:
           command: up
           stack-name: ${{ steps.stack.outputs.stack_name }}
           work-dir: infra
-          upsert: true
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
