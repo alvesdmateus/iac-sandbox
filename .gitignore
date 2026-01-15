@@ -211,3 +211,7 @@ __marimo__/
 #project scope
 project_scaffolding.mdgcp-key.json
 gcp-key.json
+
+#claude
+.claude
+.claude/
